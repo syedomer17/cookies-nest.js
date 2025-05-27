@@ -21,15 +21,15 @@ export class AuthenticationGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest<AuthRequest>();
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractTokenFromCookies(request);
 
     if (!token) {
-      throw new UnauthorizedException('Token not found');
+      throw new UnauthorizedException('Token not found in cookies');
     }
 
     try {
       const payload = this.jwtService.verify(token);
-      request.userId = payload.userId; // safely add userId to request
+      request.userId = payload.userId;
     } catch (error) {
       Logger.error(`JWT Verification Error: ${error.message}`);
       throw new UnauthorizedException('Invalid or expired token');
@@ -38,8 +38,7 @@ export class AuthenticationGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const authHeader = request.headers.authorization;
-    return authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
+  private extractTokenFromCookies(request: Request): string | undefined {
+    return request.cookies?.accessToken;
   }
 }

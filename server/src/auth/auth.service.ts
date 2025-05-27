@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import {
   BadRequestException,
   Injectable,
@@ -32,7 +33,6 @@ export class AuthService {
     private readonly otpService: OtpService,
   ) {}
 
-  // Handle user signup
   async signup(signupData: signupDto) {
     const { email, password, name } = signupData;
 
@@ -41,7 +41,6 @@ export class AuthService {
     }
 
     const existingUser = await this.UserModel.findOne({ email });
-
     if (existingUser) {
       throw new BadRequestException('Email already in use');
     }
@@ -54,7 +53,6 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    // Corrected: only one argument here
     await this.otpService.generateOtp(email);
 
     return {
@@ -67,7 +65,6 @@ export class AuthService {
     };
   }
 
-  // Handle user login
   async login(credentials: LoginDto) {
     const { email, password } = credentials;
 
@@ -76,7 +73,6 @@ export class AuthService {
     }
 
     const user = (await this.UserModel.findOne({ email })) as UserDocument;
-
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -104,9 +100,8 @@ export class AuthService {
     };
   }
 
-  // Generate access and refresh tokens
   async generateUserToken(userId: string) {
-    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1d' });
+    const accessToken = this.jwtService.sign({ userId }, { expiresIn: '7d' });
     const refreshToken = uuidv4();
 
     await this.storeRefreshToken(refreshToken, userId);
@@ -128,12 +123,7 @@ export class AuthService {
     );
   }
 
-  // Change password
-  async changePassword(
-    userId: string,
-    oldPassword: string,
-    newPassword: string,
-  ) {
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
     const user = await this.UserModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -181,7 +171,6 @@ export class AuthService {
     }
 
     const userId = (token.userId as Types.ObjectId).toString();
-
     const user = await this.UserModel.findById(userId);
     if (!user) {
       throw new InternalServerErrorException('User not found');
@@ -209,7 +198,6 @@ export class AuthService {
   }
 
   async verifyEmail(email: string, code: string) {
-    // Corrected: only two arguments here
     await this.otpService.verifyOtp(email, code);
 
     await this.UserModel.findOneAndUpdate(

@@ -72,7 +72,7 @@ import { MailModule } from './service/mail.module';
         Logger.log('✅ JWT Secret loaded');
         return {
           secret,
-          signOptions: { expiresIn: '1d' },
+          signOptions: { expiresIn: '7d' },
         };
       },
     }),

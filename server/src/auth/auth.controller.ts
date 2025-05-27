@@ -28,8 +28,12 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() credentials: LoginDto, @Res({ passthrough: true }) response: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.login(credentials);
+  async login(
+    @Body() credentials: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { accessToken, refreshToken, user } =
+      await this.authService.login(credentials);
 
     response.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -43,24 +47,37 @@ export class AuthController {
       sameSite: 'lax',
     });
 
-    return { user };
+    return { user, accessToken, refreshToken };
   }
 
   @Post('refresh')
-  async refreshToken(
-    @Body() refreshTokenDto: RefreshTokenDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    const { accessToken } = await this.authService.refreshToken(refreshTokenDto.refreshToken);
+async refreshToken(
+  @Body() refreshTokenDto: RefreshTokenDto,
+  @Res({ passthrough: true }) response: Response,
+) {
+  // Assuming your authService.refreshToken returns new tokens
+  const { accessToken, refreshToken } = await this.authService.refreshToken(refreshTokenDto.refreshToken);
 
-    response.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,// 7 days
-      sameSite: 'lax',
-    });
+  // Set the updated tokens as cookies again
+  response.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax',
+  });
 
-    return { message: 'Token refreshed' };
-  }
+  response.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax',
+  });
+
+  // Return the tokens in the response JSON
+  return {
+    message: 'Tokens refreshed',
+    accessToken,
+    refreshToken,
+  };
+}
 
   @Put('change-password')
   @UseGuards(AuthenticationGuard)
@@ -98,5 +115,20 @@ export class AuthController {
   @Post('verify-email')
   async verifyEmail(@Body('email') email: string, @Body('code') code: string) {
     return this.authService.verifyEmail(email, code);
+  }
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) response: Response) {
+    // Clear the cookies by setting them to empty with immediate expiry
+    response.clearCookie('accessToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    return { message: 'Logged out successfully' };
   }
 }

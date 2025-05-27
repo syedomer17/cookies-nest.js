@@ -36,13 +36,24 @@ export class AuthService {
   async signup(signupData: signupDto) {
     const { email, password, name } = signupData;
 
+    if (!name) {
+      throw new BadRequestException('Name must be provided');
+    }
+
     if (!email) {
       throw new BadRequestException('Email must be provided');
     }
 
+    // Check for existing email
     const existingUser = await this.UserModel.findOne({ email });
     if (existingUser) {
       throw new BadRequestException('Email already in use');
+    }
+
+    // Check for existing name
+    const existingName = await this.UserModel.findOne({ name });
+    if (existingName) {
+      throw new BadRequestException('Name already in use');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -123,7 +134,11 @@ export class AuthService {
     );
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.UserModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
